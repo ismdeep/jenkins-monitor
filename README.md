@@ -1,2 +1,1 @@
-# jenkins-monitor
-Jenkins Monitor
+# Jenkins Monitor
