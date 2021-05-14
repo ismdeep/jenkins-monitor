@@ -4,37 +4,42 @@ import (
 	"fmt"
 	"github.com/ismdeep/log"
 	"os/exec"
+	"strings"
 	"sync"
 	"time"
 )
 
 // JenkinsMonitorService Jenkins监控服务
 type JenkinsMonitorService struct {
+	Config           *Config
 	JenkinsRunIDs    []string
-	JobName          string
-	ServiceName      string
-	URL              string
 	mutex            sync.Mutex
 	WeComRobot       *WeComRobotService
 	SleepDuration    time.Duration
 	ErrSleepDuration time.Duration
 	RetryCount       int
-	CallBackBash     string
 }
 
 // StartMonitor 启动监控
 func (receiver *JenkinsMonitorService) StartMonitor() {
 	for {
-		jenkinsRunList, err := GetJenkinsRunList(receiver.URL, receiver.JobName)
+		jenkinsRunList, err := GetJenkinsRunList(receiver.Config.URL, receiver.Config.JobName)
 		if err != nil {
-			log.Error("main()", "msg", "GetJenkinsRunList() failed", "err", err)
+			log.Error("StartMonitor()", "msg", "GetJenkinsRunList() failed", "err", err)
 			time.Sleep(receiver.ErrSleepDuration)
 			continue
 		}
 
 		for _, jenkinsRun := range jenkinsRunList {
-			if jenkinsRun.Name == receiver.ServiceName && jenkinsRun.Status == "IN_PROGRESS" {
-				receiver.MonitorFunc(jenkinsRun)
+			if jenkinsRun.Name == receiver.Config.ServiceName && jenkinsRun.Status == "IN_PROGRESS" {
+				jenkinsDetail, err := GetJenkinsRunDetail(receiver.Config.URL, receiver.Config.JobName, jenkinsRun.ID)
+				if err != nil {
+					log.Error("StartMonitor()", "msg", "GetJenkinsRunDetail() failed", "err", err)
+					continue
+				}
+				if jenkinsDetail.Branch == receiver.Config.Branch {
+					receiver.MonitorFunc(jenkinsRun)
+				}
 			}
 		}
 		time.Sleep(receiver.SleepDuration)
@@ -56,13 +61,29 @@ func (receiver *JenkinsMonitorService) MonitorFunc(jenkinsRun *JenkinsRun) {
 	receiver.mutex.Unlock()
 	// ---- 检测JenkinsRunID是否已经存在 end
 
-	if err := receiver.WeComRobot.SendMessage(fmt.Sprintf("正在打包：%v", jenkinsRun.Name)); err != nil {
+	jenkinsDetail, err := GetJenkinsRunDetail(receiver.Config.URL, receiver.Config.JobName, jenkinsRun.ID)
+	if err != nil {
+		log.Error("SendMessage()", "msg", "获取详情失败。", "err", err)
+		return
+	}
+
+	strs := make([]string, 0)
+	for _, str := range jenkinsDetail.Changes {
+		strs = append(strs, fmt.Sprintf("> %v (%v)", str.CommitMsg, str.CommitID))
+	}
+
+	markdownContent := fmt.Sprintf(`<font color="green">%v</font> 正在打包
+> CommitID: %v
+%v`, jenkinsRun.Name, jenkinsDetail.RevisionID, strings.Join(strs, "\n"))
+
+	if err := receiver.WeComRobot.SendMarkdown(markdownContent); err != nil {
 		log.Error("SendMessage()", "msg", "发送信息失败。", "err", err)
+		return
 	}
 
 	retryCount := receiver.RetryCount
 	for {
-		jenkinsRun, err := GetJenkinsRunDetail(receiver.URL, receiver.JobName, jenkinsRun.ID)
+		jenkinsRun, err := GetJenkinsRun(receiver.Config.URL, receiver.Config.JobName, jenkinsRun.ID)
 		if err != nil {
 			// 重试次数用完了
 			if retryCount <= 0 {
@@ -78,10 +99,10 @@ func (receiver *JenkinsMonitorService) MonitorFunc(jenkinsRun *JenkinsRun) {
 			msg := fmt.Sprintf("打包成功：%v", jenkinsRun.Name)
 			_ = receiver.WeComRobot.SendMessage(msg)
 			log.Info("MonitorFunc()", "msg", msg)
-			if receiver.CallBackBash != "" {
+			if receiver.Config.CallbackShell != "" {
 				go func() {
 					log.Info("MonitorFunc()", "msg", "执行打包成功回调脚本")
-					_ = exec.Command(receiver.CallBackBash).Run()
+					_ = exec.Command(receiver.Config.CallbackShell).Run()
 					_ = receiver.WeComRobot.SendMessage(fmt.Sprintf("服务发布成功: %v", jenkinsRun.Name))
 					log.Info("MonitorFunc()", "msg", "执行打包成功回调脚本成功")
 				}()

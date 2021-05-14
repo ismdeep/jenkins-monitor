@@ -33,16 +33,12 @@ func main() {
 
 	log.Info("main()", "msg", "jenkinsMonitorService Start Successfully.")
 
-	jenkinsMonitorService := &JenkinsMonitorService{}
-	jenkinsMonitorService.URL = config.URL
-	jenkinsMonitorService.JobName = config.JobName
-	jenkinsMonitorService.ServiceName = config.ServiceName
-	jenkinsMonitorService.WeComRobot = &WeComRobotService{Key: config.WeComRobotKey}
-	jenkinsMonitorService.RetryCount = 5
-	jenkinsMonitorService.SleepDuration = 3 * time.Second
-	jenkinsMonitorService.ErrSleepDuration = 1 * time.Millisecond
-	jenkinsMonitorService.CallBackBash = config.CallbackShell
-	jenkinsMonitorService.StartMonitor()
+	service := &JenkinsMonitorService{}
+	service.Config = config
+	service.WeComRobot = &WeComRobotService{Key: config.WeComRobotKey}
+	service.SleepDuration = 3 * time.Second
+	service.ErrSleepDuration = 1 * time.Millisecond
+	service.StartMonitor()
 
 	return
 }

@@ -17,7 +17,14 @@ type WeComRobotService struct {
 // RespData 接口访问返回数据
 type RespData struct {
 	ErrCode int    `json:"errcode"`
-	Msg     string `json:"msg"`
+	Msg     string `json:"errmsg"`
+}
+
+type MarkdownMessagePostData struct {
+	MsgType  string `json:"msgtype"`
+	Markdown struct {
+		Content string `json:"content"`
+	} `json:"markdown"`
 }
 
 // TextMessagePostData 企业微信机器人Post请求数据结构体。接口文档： https://work.weixin.qq.com/api/doc/90000/90136/91770
@@ -29,18 +36,10 @@ type TextMessagePostData struct {
 	} `json:"text"`
 }
 
-// SendMessage 发送信息
-func (receiver *WeComRobotService) SendMessage(msg string) error {
+// SendContent 发送内容
+func (receiver *WeComRobotService) SendContent(msgType string, postData interface{}) error {
 	httpClient := &http.Client{}
-	postData := TextMessagePostData{
-		MsgType:       "text",
-		MentionedList: make([]string, 0),
-		Text: struct {
-			Content string `json:"content"`
-		}{
-			Content: msg,
-		},
-	}
+
 	data, err := json.Marshal(postData)
 	if err != nil {
 		return err
@@ -66,4 +65,29 @@ func (receiver *WeComRobotService) SendMessage(msg string) error {
 	}
 
 	return nil
+}
+
+// SendMessage 发送消息
+func (receiver *WeComRobotService) SendMessage(msg string) error {
+	return receiver.SendContent("text", TextMessagePostData{
+		MsgType:       "text",
+		MentionedList: make([]string, 0),
+		Text: struct {
+			Content string `json:"content"`
+		}{
+			Content: msg,
+		},
+	})
+}
+
+// SendMarkdown 发送MD文本
+func (receiver *WeComRobotService) SendMarkdown(msg string) error {
+	return receiver.SendContent("markdown", MarkdownMessagePostData{
+		MsgType: "markdown",
+		Markdown: struct {
+			Content string `json:"content"`
+		}{
+			Content: msg,
+		},
+	})
 }
