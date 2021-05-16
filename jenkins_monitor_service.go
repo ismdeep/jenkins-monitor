@@ -30,7 +30,7 @@ func (receiver *JenkinsMonitorService) GetJenkinsRunResultMarkdown(jenkinsRun *J
 
 	strList := make([]string, 0)
 	for _, str := range jenkinsDetail.Changes {
-		strList = append(strList, fmt.Sprintf("> - %v (%v)", str.CommitMsg, str.CommitID))
+		strList = append(strList, fmt.Sprintf("> %v (%v)", str.CommitMsg, str.CommitID))
 	}
 
 	statusText := "正在打包"
@@ -48,10 +48,10 @@ func (receiver *JenkinsMonitorService) GetJenkinsRunResultMarkdown(jenkinsRun *J
 	markdownContent := fmt.Sprintf(`<font color="%v">%v</font> [%v] %v
 %v
 > 
-> 打包耗时：%.2f秒
+> 打包耗时：%v
 > 打包时间：%v`, statusClass, jenkinsRun.Name, receiver.Config.Branch, statusText,
 		strings.Join(strList, "\n"),
-		float64(jenkinsRun.DurationMillis)/1000000.0,
+		MillsToHumanText(jenkinsRun.DurationMillis),
 		time.Now().Format("2006-01-02 15:04:05"))
 
 	return markdownContent, nil
@@ -125,14 +125,13 @@ func (receiver *JenkinsMonitorService) MonitorFunc(jenkinsRun *JenkinsRun) {
 					startTime := time.Now().UnixNano()
 					_ = exec.Command(receiver.Config.CallbackShell).Run()
 					endTime := time.Now().UnixNano()
-					timeElapseSecond := float64(endTime-startTime) / 1000000000.00
 					msg := fmt.Sprintf(`<font color="info">%v</font> 服务发布成功
 > 服务地址：[%v](%v)
-> 发布耗时：%.2f秒
+> 发布耗时：%v
 > 发布时间：%v`,
 						jenkinsRun.Name,
 						receiver.Config.PublishURL, receiver.Config.PublishURL,
-						timeElapseSecond, time.Now().Format("2006-01-02 15:04:05"))
+						MillsToHumanText((endTime-startTime)/1000000), time.Now().Format("2006-01-02 15:04:05"))
 					_ = receiver.WeComRobot.SendMarkdown(msg)
 					log.Info("MonitorFunc()", "msg", "执行打包成功回调脚本成功")
 				}()
