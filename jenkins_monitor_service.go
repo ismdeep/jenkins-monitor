@@ -47,10 +47,11 @@ func (receiver *JenkinsMonitorService) GetJenkinsRunResultMarkdown(jenkinsRun *J
 
 	markdownContent := fmt.Sprintf(`<font color="%v">%v</font> [%v] %v
 %v
-> 
+> 打包详情：[点击查看](%v/view/web/job/%v/%v/)
 > 打包耗时：%v
 > 打包时间：%v`, statusClass, jenkinsRun.Name, receiver.Config.Branch, statusText,
 		strings.Join(strList, "\n"),
+		receiver.Config.URL, receiver.Config.JobName, jenkinsRun.ID,
 		MillsToHumanText(jenkinsRun.DurationMillis),
 		GetTimeNow(TimeZoneShangHai))
 
