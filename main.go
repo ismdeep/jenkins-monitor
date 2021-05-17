@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/ismdeep/args"
 	"github.com/ismdeep/log"
+	"github.com/ismdeep/wecombot"
 	"io/ioutil"
 	"time"
 )
@@ -36,7 +37,7 @@ func main() {
 
 	service := &JenkinsMonitorService{}
 	service.Config = config
-	service.WeComRobot = &WeComRobotService{Key: config.WeComRobotKey}
+	service.WeCombot = &wecombot.Bot{Key: config.WeComRobotKey}
 	service.SleepDuration = 3 * time.Second
 	service.ErrSleepDuration = 1 * time.Millisecond
 	service.StartMonitor()
