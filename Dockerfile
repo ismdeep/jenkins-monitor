@@ -18,6 +18,9 @@ RUN wget https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.29-r0/
 RUN apk add glibc-2.29-r0.apk
 RUN apk add python3
 RUN apk add py3-pip
+RUN apk add tzdata
+RUN cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+RUN echo "Asia/Shanghai" > /etc/timezone
 RUN pip3.8 install -r /requirements.txt
 
 CMD ["/jenkins-monitor","-c", "/config.json"]
