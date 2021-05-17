@@ -55,3 +55,44 @@ func TestMillsToHumanText(t *testing.T) {
 		})
 	}
 }
+
+func TestGetTimeNow(t *testing.T) {
+	type args struct {
+		locationStr string
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		{
+			name: "TestGetTimeNow-001",
+			args: args{
+				locationStr: TimeZoneShangHai,
+			},
+		},
+		{
+			name: "TestGetTimeNow-002",
+			args: args{
+				locationStr: TimeZoneTokyo,
+			},
+		},
+		{
+			name: "TestGetTimeNow-003",
+			args: args{
+				locationStr: TimeZoneChicago,
+			},
+		},
+		{
+			name: "TestGetTimeNow-004",
+			args: args{
+				locationStr: TimeZoneLondon,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := GetTimeNow(tt.args.locationStr)
+			t.Logf("TestGetTimeNow(), got = %v", got)
+		})
+	}
+}

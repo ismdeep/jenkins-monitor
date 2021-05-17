@@ -52,7 +52,7 @@ func (receiver *JenkinsMonitorService) GetJenkinsRunResultMarkdown(jenkinsRun *J
 > 打包时间：%v`, statusClass, jenkinsRun.Name, receiver.Config.Branch, statusText,
 		strings.Join(strList, "\n"),
 		MillsToHumanText(jenkinsRun.DurationMillis),
-		time.Now().Format("2006-01-02 15:04:05"))
+		GetTimeNow(TimeZoneShangHai))
 
 	return markdownContent, nil
 }
@@ -125,13 +125,14 @@ func (receiver *JenkinsMonitorService) MonitorFunc(jenkinsRun *JenkinsRun) {
 					startTime := time.Now().UnixNano()
 					_ = exec.Command(receiver.Config.CallbackShell).Run()
 					endTime := time.Now().UnixNano()
-					msg := fmt.Sprintf(`<font color="info">%v</font> 服务发布成功
+					msg := fmt.Sprintf(`<font color="info">%v</font> [%v] 服务发布成功
 > 服务地址：[%v](%v)
 > 发布耗时：%v
 > 发布时间：%v`,
-						jenkinsRun.Name,
+						jenkinsRun.Name, receiver.Config.Branch,
 						receiver.Config.PublishURL, receiver.Config.PublishURL,
-						MillsToHumanText((endTime-startTime)/1000000), time.Now().Format("2006-01-02 15:04:05"))
+						MillsToHumanText((endTime-startTime)/1000000),
+						GetTimeNow(TimeZoneShangHai))
 					_ = receiver.WeComRobot.SendMarkdown(msg)
 					log.Info("MonitorFunc()", "msg", "执行打包成功回调脚本成功")
 				}()
