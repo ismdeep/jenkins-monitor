@@ -32,6 +32,7 @@ func main() {
 	}
 
 	log.Info("main()", "msg", "jenkinsMonitorService Start Successfully.")
+	log.Info("main()", "GetTimeNow()", GetTimeNow(TimeZoneShangHai))
 
 	service := &JenkinsMonitorService{}
 	service.Config = config
