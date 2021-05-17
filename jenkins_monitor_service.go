@@ -143,7 +143,7 @@ func (receiver *JenkinsMonitorService) MonitorFunc(jenkinsRun *JenkinsRun) {
 		// 打包失败
 		if jenkinsRun.Status == "FAILED" {
 			msg, _ := receiver.GetJenkinsRunResultMarkdown(jenkinsRun)
-			_ = receiver.WeComRobot.SendMessage(msg)
+			_ = receiver.WeComRobot.SendMarkdown(msg)
 			log.Info("MonitorFunc()", "msg", "打包失败", "jenkinsRun", jenkinsRun)
 			break
 		}
