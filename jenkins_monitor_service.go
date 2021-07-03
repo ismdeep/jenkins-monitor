@@ -15,7 +15,7 @@ type JenkinsMonitorService struct {
 	Config           *Config
 	JenkinsRunIDs    []string
 	mutex            sync.Mutex
-	WeCombot         *wecombot.Bot
+	WeComBot         *wecombot.Bot
 	SleepDuration    time.Duration
 	ErrSleepDuration time.Duration
 	RetryCount       int
@@ -119,7 +119,7 @@ func (receiver *JenkinsMonitorService) MonitorFunc(jenkinsRun *JenkinsRun) {
 		// 打包成功
 		if jenkinsRun.Status == "SUCCESS" {
 			msg, _ := receiver.GetJenkinsRunResultMarkdown(jenkinsRun)
-			_ = receiver.WeCombot.SendMarkdown(msg)
+			_ = receiver.WeComBot.SendMarkdown(msg)
 			log.Info("MonitorFunc()", "msg", "打包成功", "jenkinsRun", jenkinsRun)
 			if receiver.Config.CallbackShell != "" {
 				go func() {
@@ -135,7 +135,7 @@ func (receiver *JenkinsMonitorService) MonitorFunc(jenkinsRun *JenkinsRun) {
 						receiver.Config.PublishURL, receiver.Config.PublishURL,
 						MillsToHumanText((endTime-startTime)/1000000),
 						GetTimeNow(TimeZoneShangHai))
-					_ = receiver.WeCombot.SendMarkdown(msg)
+					_ = receiver.WeComBot.SendMarkdown(msg)
 					log.Info("MonitorFunc()", "msg", "执行打包成功回调脚本成功")
 				}()
 			}
@@ -145,7 +145,7 @@ func (receiver *JenkinsMonitorService) MonitorFunc(jenkinsRun *JenkinsRun) {
 		// 打包失败
 		if jenkinsRun.Status == "FAILED" {
 			msg, _ := receiver.GetJenkinsRunResultMarkdown(jenkinsRun)
-			_ = receiver.WeCombot.SendMarkdown(msg)
+			_ = receiver.WeComBot.SendMarkdown(msg)
 			log.Info("MonitorFunc()", "msg", "打包失败", "jenkinsRun", jenkinsRun)
 			break
 		}

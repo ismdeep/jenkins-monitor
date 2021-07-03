@@ -37,7 +37,7 @@ func main() {
 
 	service := &JenkinsMonitorService{}
 	service.Config = config
-	service.WeCombot = &wecombot.Bot{Key: config.WeComRobotKey}
+	service.WeComBot = &wecombot.Bot{Key: config.WeComRobotKey}
 	service.SleepDuration = 3 * time.Second
 	service.ErrSleepDuration = 1 * time.Millisecond
 	service.StartMonitor()
