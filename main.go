@@ -33,13 +33,12 @@ func main() {
 	}
 
 	log.Info("main()", "msg", "jenkinsMonitorService Start Successfully.")
-	log.Info("main()", "GetTimeNow()", GetTimeNow(TimeZoneShangHai))
 
 	service := &JenkinsMonitorService{}
 	service.Config = config
 	service.WeComBot = &wecombot.Bot{Key: config.WeComRobotKey}
 	service.SleepDuration = 3 * time.Second
-	service.ErrSleepDuration = 1 * time.Millisecond
+	service.ErrSleepDuration = 100 * time.Millisecond
 	service.StartMonitor()
 
 	return

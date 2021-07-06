@@ -5,22 +5,19 @@ WORKDIR /jenkins-monitor
 RUN go build -o jenkins-monitor
 
 
-FROM alpine
+FROM frolvlad/alpine-glibc
 MAINTAINER L. Jiang <l.jiang.1024@gmail.com>
 
-COPY requirements.txt /
-COPY k8s-restart.py /
-COPY k8s-restart.sh /
+ADD requirements.txt k8s-restart.py k8s-restart.sh /
 RUN chmod +x /k8s-restart.sh
 COPY --from=builder /jenkins-monitor/jenkins-monitor /jenkins-monitor
-RUN wget -q -O /etc/apk/keys/sgerrand.rsa.pub https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub
-RUN wget https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.29-r0/glibc-2.29-r0.apk
-RUN apk add glibc-2.29-r0.apk
-RUN apk add python3.9
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apk/repositories
+RUN apk add bash
+RUN apk add python3
 RUN apk add py3-pip
 RUN apk add tzdata
 RUN cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 RUN echo "Asia/Shanghai" > /etc/timezone
-RUN pip3.9 install -r /requirements.txt
+RUN pip3.8 install -r /requirements.txt
 
 CMD ["/jenkins-monitor","-c", "/config.json"]

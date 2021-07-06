@@ -21,6 +21,29 @@ type JenkinsMonitorService struct {
 	RetryCount       int
 }
 
+func (receiver *JenkinsMonitorService) SendFailedMsg(jenkinsRun *JenkinsRun, msg string) {
+	_ = receiver.WeComBot.SendMarkdown(fmt.Sprintf(`<font color="warning">%v</font> [%v] 服务发布失败
+> 地址：[%v](%v)
+> 失败原因：%v
+> 时间：%v`,
+		jenkinsRun.Name, receiver.Config.Branch,
+		receiver.Config.PublishURL, receiver.Config.PublishURL,
+		msg,
+		GetTimeNow(TimeZoneShangHai)))
+}
+
+func (receiver *JenkinsMonitorService) SendSuccessMsg(jenkinsRun *JenkinsRun, timeElapseNano int64) {
+	msgMarkdown := fmt.Sprintf(`<font color="info">%v</font> [%v] 服务发布成功
+> 服务地址：[%v](%v)
+> 发布耗时：%v
+> 发布时间：%v`,
+		jenkinsRun.Name, receiver.Config.Branch,
+		receiver.Config.PublishURL, receiver.Config.PublishURL,
+		MillsToHumanText((timeElapseNano)/1000000),
+		GetTimeNow(TimeZoneShangHai))
+	_ = receiver.WeComBot.SendMarkdown(msgMarkdown)
+}
+
 // GetJenkinsRunResultMarkdown 获取Jenkins打包结果内容
 func (receiver *JenkinsMonitorService) GetJenkinsRunResultMarkdown(jenkinsRun *JenkinsRun) (string, error) {
 	jenkinsDetail, err := GetJenkinsRunDetail(receiver.Config.URL, receiver.Config.JobName, jenkinsRun.ID)
@@ -34,23 +57,23 @@ func (receiver *JenkinsMonitorService) GetJenkinsRunResultMarkdown(jenkinsRun *J
 		strList = append(strList, fmt.Sprintf("> %v (%v)", str.CommitMsg, str.CommitID))
 	}
 
-	statusText := "正在打包"
+	statusText := "正在构建"
 	statusClass := "comment"
 	if jenkinsRun.Status == "SUCCESS" {
-		statusText = "打包成功"
+		statusText = "构建成功"
 		statusClass = "info"
 	}
 
 	if jenkinsRun.Status == "FAILED" {
-		statusText = "打包失败"
+		statusText = "构建失败"
 		statusClass = "warning"
 	}
 
 	markdownContent := fmt.Sprintf(`<font color="%v">%v</font> [%v] %v
 %v
-> 打包详情：[点击查看](%v/view/web/job/%v/%v/)
-> 打包耗时：%v
-> 打包时间：%v`, statusClass, jenkinsRun.Name, receiver.Config.Branch, statusText,
+> 构建详情：[点击查看](%v/view/web/job/%v/%v/)
+> 构建耗时：%v
+> 构建时间：%v`, statusClass, jenkinsRun.Name, receiver.Config.Branch, statusText,
 		strings.Join(strList, "\n"),
 		receiver.Config.URL, receiver.Config.JobName, jenkinsRun.ID,
 		MillsToHumanText(jenkinsRun.DurationMillis),
@@ -87,7 +110,6 @@ func (receiver *JenkinsMonitorService) StartMonitor() {
 
 // MonitorFunc 监控函数
 func (receiver *JenkinsMonitorService) MonitorFunc(jenkinsRun *JenkinsRun) {
-
 	// ---- 检测JenkinsRunID是否已经存在 start
 	receiver.mutex.Lock()
 	for _, tmpID := range receiver.JenkinsRunIDs {
@@ -101,20 +123,23 @@ func (receiver *JenkinsMonitorService) MonitorFunc(jenkinsRun *JenkinsRun) {
 	// ---- 检测JenkinsRunID是否已经存在 end
 
 	log.Info("MonitorFunc()", "msg", "正在打包", "jenkinsRun", jenkinsRun)
-
 	retryCount := receiver.RetryCount
 	for {
 		jenkinsRun, err := GetJenkinsRun(receiver.Config.URL, receiver.Config.JobName, jenkinsRun.ID)
 		if err != nil {
+			log.Error("MonitorFunc", "err", err)
 			// 重试次数用完了
 			if retryCount <= 0 {
 				log.Error("重试次数用完了，监控退出。")
+				receiver.SendFailedMsg(jenkinsRun, "重试次数用完了，监控退出。")
 				break
 			}
 			retryCount--
 			time.Sleep(receiver.ErrSleepDuration)
 			continue
 		}
+
+		retryCount = receiver.RetryCount
 
 		// 打包成功
 		if jenkinsRun.Status == "SUCCESS" {
@@ -125,17 +150,14 @@ func (receiver *JenkinsMonitorService) MonitorFunc(jenkinsRun *JenkinsRun) {
 				go func() {
 					log.Info("MonitorFunc()", "msg", "执行打包成功回调脚本")
 					startTime := time.Now().UnixNano()
-					_ = exec.Command(receiver.Config.CallbackShell).Run()
+					err := exec.Command(receiver.Config.CallbackShell).Run()
+					if err != nil {
+						log.Info("ExecCommand", "err", err)
+						receiver.SendFailedMsg(jenkinsRun, err.Error())
+						return
+					}
 					endTime := time.Now().UnixNano()
-					msg := fmt.Sprintf(`<font color="info">%v</font> [%v] 服务发布成功
-> 服务地址：[%v](%v)
-> 发布耗时：%v
-> 发布时间：%v`,
-						jenkinsRun.Name, receiver.Config.Branch,
-						receiver.Config.PublishURL, receiver.Config.PublishURL,
-						MillsToHumanText((endTime-startTime)/1000000),
-						GetTimeNow(TimeZoneShangHai))
-					_ = receiver.WeComBot.SendMarkdown(msg)
+					receiver.SendSuccessMsg(jenkinsRun, endTime-startTime)
 					log.Info("MonitorFunc()", "msg", "执行打包成功回调脚本成功")
 				}()
 			}

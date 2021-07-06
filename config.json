@@ -1,3 +1,10 @@
 {
-
+  "job_name": "",
+  "service_name": "",
+  "branch": "dev",
+  "url": "https://",
+  "publish_url": "https://",
+  "wecom_robot_key": "",
+  "callback_shell": "/k8s-restart.sh",
+  "retry_count": 5
 }
