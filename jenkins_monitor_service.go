@@ -22,7 +22,7 @@ type JenkinsMonitorService struct {
 }
 
 func (receiver *JenkinsMonitorService) SendFailedMsg(jenkinsRun *JenkinsRun, msg string) {
-	_ = receiver.WeComBot.SendMarkdown(fmt.Sprintf(`<font color="warning">%v</font> [%v] 服务发布失败
+	_ = receiver.WeComBot.SendMarkdown(fmt.Sprintf(`<font color="warning">%v</font> [%v] 发布失败
 > 地址：[%v](%v)
 > 失败原因：%v
 > 时间：%v`,
@@ -33,7 +33,7 @@ func (receiver *JenkinsMonitorService) SendFailedMsg(jenkinsRun *JenkinsRun, msg
 }
 
 func (receiver *JenkinsMonitorService) SendSuccessMsg(jenkinsRun *JenkinsRun, timeElapseNano int64) {
-	msgMarkdown := fmt.Sprintf(`<font color="info">%v</font> [%v] 服务发布成功
+	msgMarkdown := fmt.Sprintf(`<font color="info">%v</font> [%v] 已发布
 > 服务地址：[%v](%v)
 > 发布耗时：%v
 > 发布时间：%v`,
@@ -60,7 +60,7 @@ func (receiver *JenkinsMonitorService) GetJenkinsRunResultMarkdown(jenkinsRun *J
 	statusText := "正在构建"
 	statusClass := "comment"
 	if jenkinsRun.Status == "SUCCESS" {
-		statusText = "构建成功"
+		statusText = "构建完成"
 		statusClass = "info"
 	}
 
@@ -145,7 +145,7 @@ func (receiver *JenkinsMonitorService) MonitorFunc(jenkinsRun *JenkinsRun) {
 		if jenkinsRun.Status == "SUCCESS" {
 			msg, _ := receiver.GetJenkinsRunResultMarkdown(jenkinsRun)
 			_ = receiver.WeComBot.SendMarkdown(msg)
-			log.Info("MonitorFunc()", "msg", "打包成功", "jenkinsRun", jenkinsRun)
+			log.Info("MonitorFunc()", "msg", "构建成功", "jenkinsRun", jenkinsRun)
 			if receiver.Config.CallbackShell != "" {
 				go func() {
 					log.Info("MonitorFunc()", "msg", "执行打包成功回调脚本")
