@@ -11,7 +11,7 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v1
       - name: Docker release
-        uses: elgohr/Publish-Docker-Github-Action@master
+        uses: elgohr/Publish-Docker-Github-Action@v5
         with:
           name: ismdeep/jenkins-monitor
           username: ${{ secrets.DOCKER_USERNAME }}
